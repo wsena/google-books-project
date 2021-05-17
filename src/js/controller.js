@@ -1,14 +1,17 @@
 import * as model from './model.js';
 import bookView from './views/bookView.js';
-import Book from './Book.js';
+import searchView from './views/searchView.js';
+import resultsView from './views/resultsView.js';
+
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
+import { async } from 'regenerator-runtime';
 
-function renderBook() {
-    bookView.render(model.state.books[0]);
-};
+if (module.hot){
+    module.hot.accept();
+}
 
-const controlBooks = async function () {
+const controlBooks = async function() {
     try {
 
         const id = window.location.hash.slice(1);
@@ -19,11 +22,27 @@ const controlBooks = async function () {
 
         await model.loadBook(id);
 
-        renderBook();
+        bookView.render(model.state.book);
     } catch (err) {
         bookView.renderError();
     }
-}
+};
+
+const controlSearchResults = async function(){
+    try{
+        bookView._clear();
+        resultsView.renderSpinner();
+
+        const query = searchView.getQuery();
+
+        if(!query) return;
+
+        await model.loadSearchResults(query);
+        resultsView.render(model.state.search.results);
+    } catch(err){
+        bookView.renderError();
+    }
+};
 
 const getBookByNameAndAuthor = async function(bookName, bookAuthor){
   try{
@@ -31,7 +50,7 @@ const getBookByNameAndAuthor = async function(bookName, bookAuthor){
 
     await model.loadBookByTitleAndAuthor(bookName, bookAuthor);
 
-    renderBook();
+    bookView.render(model.state.books[0]);
 
   }catch(err){
     bookView.renderError();
@@ -44,7 +63,7 @@ const getAllBooks = async function () {
         
         await model.loadAllBooks();
 
-        renderBook();
+        bookView.render(model.state.books[0]);
     } catch (err) {
       bookView.renderError();
     }
@@ -52,9 +71,7 @@ const getAllBooks = async function () {
 
 const init = function(){
     bookView.addHandlerRender(controlBooks);
+    searchView.addHandlerSearch(controlSearchResults);
 }
 
-//controlBooks("Mw8LEAAAQBAJ");
-//getAllBooks();
-//getBookByNameAndAuthor('A Little Life', 'Hanya');
 init();

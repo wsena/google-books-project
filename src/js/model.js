@@ -6,6 +6,10 @@ import { getJSON } from './helpers.js';
 export const state = {
     book: {},
     books:[],
+    search: {
+        query: '',
+        results: []
+    },
 };
 
 const createArrayBooksObjects = function (data){
@@ -22,7 +26,7 @@ const createArrayBooksObjects = function (data){
                   book.volumeInfo.categories,
                   book.volumeInfo.language,
                   book.volumeInfo.pageCount,
-                  book.volumeInfo.imageLinks.thumbnail,
+                  book.volumeInfo.hasOwnProperty("imageLinks") ? book.volumeInfo.imageLinks.thumbnail : "",
                   book.accessInfo.pdf.isAvailable,
                   book.accessInfo.pdf.acsTokenLink,
                   book.accessInfo.epub.isAvailable);
@@ -48,7 +52,7 @@ export const loadBook = async function(id){
                             data.volumeInfo.categories,
                             data.volumeInfo.language,
                             data.volumeInfo.pageCount,
-                            data.volumeInfo.imageLinks.thumbnail,
+                            data.volumeInfo.hasOwnProperty("imageLinks") ? data.volumeInfo.imageLinks.thumbnail : "",
                             data.accessInfo.pdf.isAvailable,
                             data.accessInfo.pdf.acsTokenLink,
                             data.accessInfo.epub.isAvailable);
@@ -72,10 +76,24 @@ export const loadAllBooks = async function(){
 
 export const loadBookByTitleAndAuthor = async function(title, author){
     try{
-    const data = await getJSON(`${API_URL}?q=+intitle:${title}+inauthor:${author}&maxResults=1&printType=books&key=${process.env.REACT_APP_API_KEY}`);
+    const data = await getJSON(`${API_URL}?q=+intitle:${title}+inauthor:${author}&maxResults=1&orderBy=relevance&printType=books&key=${process.env.REACT_APP_API_KEY}`);
 
     state.books = createArrayBooksObjects(data);
     } catch(err){
+        throw err;
+    }
+};
+
+export const loadSearchResults = async function(query){
+    try{
+        state.search.query = query;
+        const data = await getJSON(`${API_URL}?q=${query}&printType=books&orderBy=relevance&key=${process.env.REACT_APP_API_KEY}`);
+
+        if(data.totalItems === 0) return new Error(); 
+
+        state.search.results = createArrayBooksObjects(data);
+        state.books = state.search.results;
+    } catch (err){
         throw err;
     }
 };
